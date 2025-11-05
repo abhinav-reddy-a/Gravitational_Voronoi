@@ -13,7 +13,7 @@ class Client:
 
     # connect to server and get game info
     self.sock.connect((host, port))
-    self.num_players, self.num_stone, self.player_number = map(int, self.__receive_move())
+    self.num_players, self.num_stone, self.init_weight_pool, self.player_number = map(int, self.__receive_move())
     self.grid = [[0] * self.grid_size for i in range(self.grid_size)]
     self.moves = [] # store history of moves
 

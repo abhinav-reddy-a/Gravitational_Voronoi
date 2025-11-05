@@ -3,10 +3,11 @@ from voronoi_server import VoronoiServer
 import time, sys, math, socket
 
 class VoronoiGame:
-  def __init__(self, num_stones, num_players, grid_size, min_dist, host, port, use_graphic):
+  def __init__(self, num_stones, num_players, init_weight_pool, grid_size, min_dist, host, port, use_graphic):
     # game variables
     self.num_stones = num_stones
     self.num_players = num_players
+    self.init_weight_pool = init_weight_pool 
     self.grid_size = grid_size
     self.min_dist = min_dist # minimum distance allowed between stoens
     self.grid = [[0] * grid_size for i in range(grid_size)]
@@ -223,7 +224,7 @@ class VoronoiGame:
         print(" ".join([self.server.names[w - 1] for w in winners]))
 
   def start(self):
-    self.server.establish_connection(self.num_players, self.num_stones)
+    self.server.establish_connection(self.num_players, self.num_stones, self.init_weight_pool)
     if self.use_graphic:
       graphic_init_msg = '"NAME_SEPARATOR"'.join(self.server.names) + '\n'
       self.graphic_socket.sendall(graphic_init_msg.encode('utf-8'))
@@ -283,11 +284,12 @@ if __name__ == "__main__":
   MIN_DIST = 66
   num_stones = int(sys.argv[1])
   num_players = int(sys.argv[2])
-  host = sys.argv[3]
-  port = int(sys.argv[4])
+  init_weight_pool = int(sys.argv[3])
+  host = sys.argv[4]
+  port = int(sys.argv[5])
   use_graphic = False
-  if len(sys.argv) == 6 and int(sys.argv[5]) == 1:
+  if len(sys.argv) == 7 and int(sys.argv[6]) == 1:
     use_graphic = True
 
-  game = VoronoiGame(num_stones, num_players, GRID_SIZE, MIN_DIST, host, port, use_graphic)
+  game = VoronoiGame(num_stones, num_players, init_weight_pool, GRID_SIZE, MIN_DIST, host, port, use_graphic)
   game.start()
