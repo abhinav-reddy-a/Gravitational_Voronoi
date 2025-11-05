@@ -104,6 +104,7 @@ class VoronoiGame:
     # Add rest of meta data
     data += ' '.join(map(lambda x : '{0:.2f}'.format(x), self.player_times)) + ' '
     data += ' '.join(map(str, self.scores)) + ' '
+    data += ' '.join(map(str, self.weight_pool)) + ' '
     data += '{} {} '.format(self.num_players, self.current_player + 1)
     data += '{} {}'.format(move_row, move_col)
     data += '\n' # signify the end of the message

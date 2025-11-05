@@ -44,23 +44,39 @@
     height: 40px;
   }
 
+  #player-info .player-info-header {
+	font-weight: bold;
+	letter-spacing: 1px;
+	border-bottom: 2px solid #464646;
+	height: 50px;
+	display: grid;
+	grid-template-columns: 40px 140px 100px 100px 100px 120px; 
+	align-items: center;
+	background: #d0d0d0;
+  }
+
+  #player-info .player-info-header div {
+	margin: 0 10px;
+  }
+
   #player-info .player-info-container {
-    font-weight: bold;
-    letter-spacing: 1px;
-    border-bottom: 1px solid #666666;
-    height: 60px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+	font-weight: bold;
+	letter-spacing: 1px;
+	border-bottom: 1px solid #666666;
+	height: 60px;
+	display: grid;
+	grid-template-columns: 40px 140px 100px 100px 100px 120px;	      
+	align-items: center;
   }
 
   #player-info .player-info-container div {
-    margin: 0 10px;
+	margin: 0 10px;
   }
 
   #player-info .player-color {
-    height: 28px;
-    width: 28px;
+	height: 28px;
+	width: 28px;
+	margin-left: 6px !important;
   }
 
   #time-taken {
@@ -226,6 +242,7 @@
         var scoreComponent = document.createElement('div');
         var totalScoreComponent = document.createElement('div');
         var timeComponent = document.createElement('div');
+		var weightPoolComponent = document.createElement('div');
 
         infoComponent.classList.add('player-info-container')
         infoComponent.setAttribute('player-id', index.toString());
@@ -239,12 +256,15 @@
         totalScoreComponent.textContent = '0';
         timeComponent.classList.add('player-time');
         timeComponent.textContent = '120s';
+		weightPoolComponent.classList.add('player-weight-pool');
+        weightPoolComponent.textContent = '0';
 
         infoComponent.appendChild(colorComponent);
         infoComponent.appendChild(nameComponent);
         infoComponent.appendChild(timeComponent);
         infoComponent.appendChild(scoreComponent);
         infoComponent.appendChild(totalScoreComponent);
+		infoComponent.appendChild(weightPoolComponent);
 
         return infoComponent;
       }
@@ -265,7 +285,22 @@
       function init(names) {
         var nameArr = names.split('"NAME_SEPARATOR"');
         var infoDiv = document.getElementById('player-info');
-        for (var i = 0; i < nameArr.length; i++) {
+
+		// ADD HEADER ROW
+	  	var headerRow = document.createElement('div');
+	  	headerRow.classList.add('player-info-header');
+	  	headerRow.innerHTML = `
+			<div></div>
+			<div>Name</div>
+			<div>Time</div>
+			<div>Round %</div>
+			<div>Total %</div>
+			<div>Weight Pool</div>
+		`;
+	  	infoDiv.appendChild(headerRow);
+
+
+		for (var i = 0; i < nameArr.length; i++) {
           infoDiv.appendChild(getInfoComponent(nameArr[i], i));
           totalScores.push(0);
         }
@@ -275,9 +310,10 @@
       function updatePlayers(boardData) {
         var board = boardData.split(" ");
         var numberOfPlayers = parseInt([board[board.length - 4]]);
-        var scores = board.slice(board.length - 4 - numberOfPlayers, board.length - 4);
-        var times = board.slice(board.length - 4 - 2 * numberOfPlayers, board.length - 4 - numberOfPlayers);
-        var playerInfo = document.querySelectorAll('#player-info .player-info-container');
+        var weightPools = board.slice(board.length - 4 - numberOfPlayers, board.length - 4);
+        var scores = board.slice(board.length - 4 - 2 * numberOfPlayers, board.length - 4 - numberOfPlayers);
+        var times = board.slice(board.length - 4 - 3 * numberOfPlayers, board.length - 4 - 2 * numberOfPlayers);
+		var playerInfo = document.querySelectorAll('#player-info .player-info-container');
         var totalRoundScore = 0;
         scores.forEach(function(singleScore) {
           totalRoundScore += parseInt(singleScore, 10);
@@ -296,6 +332,7 @@
           info.querySelector('.player-score').textContent = `${percentageRoundScore}%`;
           info.querySelector('.total-player-score').textContent = `${percentageScore}%`;
           info.querySelector('.player-time').textContent = times[i] + 's';
+		  info.querySelector('.player-weight-pool').textContent = weightPools[i];
         });
         lastScores = scores.map(function(singleScore) {return parseInt(singleScore, 10)});
       }
