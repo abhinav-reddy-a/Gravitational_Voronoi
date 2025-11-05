@@ -14,6 +14,7 @@ class Client:
     # connect to server and get game info
     self.sock.connect((host, port))
     self.num_players, self.num_stone, self.init_weight_pool, self.player_number = map(int, self.__receive_move())
+    self.remaining_weight_pool = self.init_weight_pool
     self.grid = [[0] * self.grid_size for i in range(self.grid_size)]
     self.moves = [] # store history of moves
 
@@ -24,6 +25,7 @@ class Client:
   def __reset(self):
     self.grid = [[0] * self.grid_size for i in range(self.grid_size)]
     self.moves = []
+    self.remaining_weight_pool = self.init_weight_pool
 
   def __receive(self):
     return self.sock.recv(2048).decode('utf-8')
@@ -34,30 +36,35 @@ class Client:
   def __receive_move(self):
     return self.__receive().split()
 
-  def __send_move(self, move_row, move_col):
-    self.__send("{} {}".format(move_row, move_col))
+  def __send_move(self, move_row, move_col, move_weight):
+    self.__send("{} {} {}".format(move_row, move_col, move_weight))
 
   def __compute_distance(self, row1, col1, row2, col2):
     return math.sqrt((row2 - row1)**2 + (col2 - col1)**2)
 
-  def __is_valid_move(self, move_row, move_col):
+  def __is_valid_weight(self, move_weight):
+    return move_weight < self.remaining_weight_pool
+
+  def __is_valid_move(self, move_row, move_col, move_weight):
     for move in self.moves:
       if (self.__compute_distance(move_row, move_col, move[0], move[1])) < self.min_dist:
         return False
-    return True
+    return self.__is_valid_weight(move_weight)
 
   # your algorithm goes here
   # a naive random algorithm is provided as a placeholder
   def __getMove(self):
     move_row = 0
     move_col = 0
+    move_weight = 0
     while True:
       move_row = random.randint(0, 999)
       move_col = random.randint(0, 999)
-      if (self.__is_valid_move(move_row, move_col)):
+      move_weight = random.randint(0, min(10,self.remaining_weight_pool))
+      if (self.__is_valid_move(move_row, move_col, move_weight)):
         break
 
-    return move_row, move_col
+    return move_row, move_col, move_weight
 
   def start(self):
     for p in range(self.num_players):
@@ -74,28 +81,31 @@ class Client:
           scores.append(move_data[i + 1])
         # new moves
         new_moves = move_data[self.num_players + 1 : ]
-        num_new_moves = int(len(new_moves) / 3)
+        num_new_moves = int(len(new_moves) / 4)
         # sanity check
-        if num_new_moves * 3 != len(new_moves):
+        if num_new_moves * 4 != len(new_moves):
           print("Error: error parsing list of new moves")
 
         # insert new moves into the grid
         for i in range(num_new_moves):
-          move_row = int(new_moves[3 * i])
-          move_col = int(new_moves[3 * i + 1])
-          player = int(new_moves[3 * i + 2])
+          move_row = int(new_moves[4 * i])
+          move_col = int(new_moves[4 * i + 1])
+          move_weight = int(new_moves[4 * i + 2])
+          player = int(new_moves[4 * i + 3])
           # sanity check, this should always be true
           if player > 0:
             self.grid[move_row][move_col] = player
-            self.moves.append((move_row, move_col, player))
+            self.moves.append((move_row, move_col, move_weight, player))
           else:
             print("Error: player info incorrect")
 
         # make move
-        my_move_row, my_move_col = self.__getMove()
-        self.moves.append((my_move_row, my_move_col, self.player_number))
-        self.__send_move(my_move_row, my_move_col)
-        print("Played at row {}, col {}".format(my_move_row, my_move_col))
+        my_move_row, my_move_col, my_move_weight = self.__getMove()
+        self.remaining_weight_pool -= my_move_weight
+        self.moves.append((my_move_row, my_move_col, my_move_weight, self.player_number))
+        self.__send_move(my_move_row, my_move_col, my_move_weight)
+        print("Played at row {}, col {} with weight: {}".format(my_move_row, my_move_col, my_move_weight))
+      self.__reset()
 
     self.sock.close()
 

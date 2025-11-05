@@ -7,7 +7,8 @@ class VoronoiGame:
     # game variables
     self.num_stones = num_stones
     self.num_players = num_players
-    self.init_weight_pool = init_weight_pool 
+    self.init_weight_pool = init_weight_pool
+    self.weight_pool = [init_weight_pool] * num_players 
     self.grid_size = grid_size
     self.min_dist = min_dist # minimum distance allowed between stoens
     self.grid = [[0] * grid_size for i in range(grid_size)]
@@ -42,6 +43,7 @@ class VoronoiGame:
     self.player_times = [120.0] * num_players
     self.moves = []
     self.pull = []
+    self.weight_pool = [self.init_weight_pool] * num_players
     for i in range(num_players):
       self.pull.append([[0] * self.grid_size for j in range(self.grid_size)])
     self.moves_made = 0
@@ -54,11 +56,11 @@ class VoronoiGame:
     game_info += " ".join(str(i) for i in self.scores) + " "
     # new moves - go through move history in reverse order and stop when a move by current player is found
     new_moves = []
-    for i in range(len(self.moves) - 1, 1, -3):
+    for i in range(len(self.moves) - 1, 1, -4):
       if (self.moves[i] == self.current_player + 1):
         break
-      for j in range(3):
-        new_moves.append(self.moves[i - 2 + j])
+      for j in range(4):
+        new_moves.append(self.moves[i - 3 + j])
     game_info += " ".join(str(i) for i in new_moves) + "\n"
     return game_info
 
@@ -113,7 +115,7 @@ class VoronoiGame:
   def __compute_distance(self, row1, col1, row2, col2):
     return math.sqrt((row2 - row1)**2 + (col2 - col1)**2)
 
-  def __is_legal_move(self, row, col):
+  def __is_legal_move(self, row, col, weight):
     if self.grid[row][col] != 0:
       print("({}, {}) is already occupied".format(row, col))
       return False
@@ -123,8 +125,11 @@ class VoronoiGame:
     if col < 0 or col >= self.grid_size:
       print("({}, {}) is out of bounds".format(row, col))
       return False
+    if self.weight_pool[self.current_player] < weight:
+        print("weight of the stone: {} is more than the remaining pool size: {}", weight, self.weight_pool[self.current_player])
+        return False
     # check for min dist requirement
-    for move_start in range(0, len(self.moves), 3):
+    for move_start in range(0, len(self.moves), 4):
       move_row = self.moves[move_start]
       move_col = self.moves[move_start + 1]
       if (self.__compute_distance(row, col, move_row, move_col) < self.min_dist):
@@ -145,9 +150,9 @@ class VoronoiGame:
     self.player_times[self.current_player] -= (end_time - start_time)
 
     data = client_response.split()
-    return int(data[0]), int(data[1])
+    return int(data[0]), int(data[1]), int(data[2])
 
-  def __update_scores(self, move_row, move_col):
+  def __update_scores(self, move_row, move_col, move_weight):
     tie_created = 0
     tie_broken = 0
     # note: score ignores stones, because each player has the same number of stones
@@ -158,7 +163,7 @@ class VoronoiGame:
           continue
         # update current player's pull
         d = self.__compute_distance(row, col, move_row, move_col)
-        self.pull[self.current_player][row][col] += float(float(1) / (d*d))
+        self.pull[self.current_player][row][col] += float(float(move_weight) / (d*d))
 
         # first move claims every cell on the grid
         if self.moves_made == 1:
@@ -239,9 +244,9 @@ class VoronoiGame:
           break
 
         # get and validate move
-        move_row, move_col = self.__get_player_move()
-        print("{} has placed their stone on: {}, {}".format(self.server.names[self.current_player] , move_row, move_col))
-        if not self.__is_legal_move(move_row, move_col):
+        move_row, move_col, move_weight = self.__get_player_move()
+        print("{} has placed their stone on: {}, {} with weight: {}".format(self.server.names[self.current_player] , move_row, move_col, move_weight))
+        if not self.__is_legal_move(move_row, move_col, move_weight):
           print("Move is illegal, skipping the current player")
           continue
 
@@ -250,8 +255,9 @@ class VoronoiGame:
         self.grid[move_row][move_col] = self.current_player + 1
         self.moves.append(move_row)
         self.moves.append(move_col)
+        self.moves.append(move_weight)
         self.moves.append(self.current_player + 1)
-        self.__update_scores(move_row, move_col)
+        self.__update_scores(move_row, move_col, move_weight)
 
         # send data to node server
         if self.use_graphic:
