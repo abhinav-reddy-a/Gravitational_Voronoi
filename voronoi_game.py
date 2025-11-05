@@ -52,8 +52,11 @@ class VoronoiGame:
   def __get_game_info(self):
     # game over flag
     game_info = ("1" if self.game_over else "0") + " "
+    # send weight pool of current player    
+    game_info += str(self.weight_pool[self.current_player]) + " "
     # scores
     game_info += " ".join(str(i) for i in self.scores) + " "
+
     # new moves - go through move history in reverse order and stop when a move by current player is found
     new_moves = []
     for i in range(len(self.moves) - 1, 1, -4):
@@ -61,8 +64,7 @@ class VoronoiGame:
         break
       for j in range(4):
         new_moves.append(self.moves[i - 3 + j])
-    game_info += " ".join(str(i) for i in new_moves) + " "
-    game_info += str(self.weight_pool[self.current_player]) + "\n"
+    game_info += " ".join(str(i) for i in new_moves) + "\n"
     return game_info
 
   def __broadcast_game_info(self):

@@ -75,12 +75,15 @@ class Client:
           print("Game over")
           break
 
+        # remaining weight pool of current player
+        self.remaining_weight_pool = int(move_data[1])
+
         # scores
         scores = []
         for i in range(self.num_players):
-          scores.append(move_data[i + 1])
+          scores.append(move_data[i + 2])
         # new moves
-        new_moves = move_data[self.num_players + 1 : ]
+        new_moves = move_data[self.num_players + 2 : ]
         num_new_moves = int(len(new_moves) / 4)
         # sanity check
         if num_new_moves * 4 != len(new_moves):
@@ -98,9 +101,6 @@ class Client:
             self.moves.append((move_row, move_col, move_weight, player))
           else:
             print("Error: player info incorrect")
-
-        # get remaining weight
-        self.remaining_weight_pool = int(move_data[-1]) 
 
         # make move
         my_move_row, my_move_col, my_move_weight = self.__getMove()
