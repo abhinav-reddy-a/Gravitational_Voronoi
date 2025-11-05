@@ -29,12 +29,12 @@
     justify-content: center;
   }
 
-  #info-container {
+  #main-info-container {
     font-size: 20px;
     margin-right: 50px;
   }
 
-  #info-container h3 {
+  #main-info-container h3 {
     color: #464646;
     font-size: 26px;
     margin: 0;
@@ -44,39 +44,68 @@
     height: 40px;
   }
 
-  #player-info .player-info-header {
-	font-weight: bold;
-	letter-spacing: 1px;
-	border-bottom: 2px solid #464646;
-	height: 50px;
-	display: grid;
-	grid-template-columns: 40px 140px 100px 100px 100px 120px; 
-	align-items: center;
-	background: #d0d0d0;
+  .total-stats-header {
+    font-weight: bold;
+    letter-spacing: 1px;
+    border-bottom: 2px solid #464646;
+    height: 50px;
+    display: grid;
+    grid-template-columns: 40px 140px 120px; 
+    align-items: center;
+    background: #d0d0d0;
   }
 
-  #player-info .player-info-header div {
-	margin: 0 10px;
+  .total-stats-header div {
+    margin: 0 10px;
   }
 
-  #player-info .player-info-container {
-	font-weight: bold;
-	letter-spacing: 1px;
-	border-bottom: 1px solid #666666;
-	height: 60px;
-	display: grid;
-	grid-template-columns: 40px 140px 100px 100px 100px 120px;	      
-	align-items: center;
+  .total-stats-container {
+    font-weight: bold;
+    letter-spacing: 1px;
+    border-bottom: 1px solid #666666;
+    height: 60px;
+    display: grid;
+    grid-template-columns: 40px 140px 120px;	      
+    align-items: center;
   }
 
-  #player-info .player-info-container div {
-	margin: 0 10px;
+  .total-stats-container div {
+    margin: 0 10px;
   }
 
-  #player-info .player-color {
-	height: 28px;
-	width: 28px;
-	margin-left: 6px !important;
+  .player-info-header {
+    font-weight: bold;
+    letter-spacing: 1px;
+    border-bottom: 2px solid #464646;
+    height: 50px;
+    display: grid;
+    grid-template-columns: 40px 140px 100px 100px 120px; 
+    align-items: center;
+    background: #d0d0d0;
+  }
+
+  .player-info-header div {
+    margin: 0 10px;
+  }
+
+  .player-info-container {
+    font-weight: bold;
+    letter-spacing: 1px;
+    border-bottom: 1px solid #666666;
+    height: 60px;
+    display: grid;
+    grid-template-columns: 40px 140px 100px 100px 120px;	      
+    align-items: center;
+  }
+
+  .player-info-container div {
+    margin: 0 10px;
+  }
+
+  .player-color {
+    height: 28px;
+    width: 28px;
+    margin-left: 6px !important;
   }
 
   #time-taken {
@@ -95,7 +124,32 @@
     padding-top: 50px;
   }
 
-  #canvas {
+  #rounds-container {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 40px;
+  }
+
+  .round-section {
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+  }
+
+  .round-info {
+    font-size: 20px;
+  }
+
+  .round-title {
+    color: #464646;
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #464646;
+  }
+
+  .game-canvas {
     border: 1px solid #464646;
     height: 700px;
     width: 700px;
@@ -107,31 +161,34 @@
       Gravitational Voronoi
     </h1>
     <div id="container">
-      <div id="info-container">
-        <h3>Players</h3>
-        <div id="player-info"></div>
+      <div id="main-info-container">
+        <h3>Total Stats</h3>
+        <div id="total-stats"></div>
         <div id="time-taken">
           <h3>Current Move Time</h3>
           <div id="clock">0.00</div>
         </div>
         <div id="game-over"></div>
       </div>
-      <canvas id="canvas" width="1000" height="1000">
-        Your browser does not support the HTML5 canvas tag.
-      </canvas>
+      <div id="rounds-container"></div>
     </div>
     <script src="/socket.io/socket.io.js"></script>
     <script type="text/javascript">
       var socket = io("127.0.0.1:10000");
 
-      var canvas = document.getElementById('canvas');
-      var canvasWidth = canvas.width;
-      var canvasHeight = canvas.height;
+      var roundsContainer = document.getElementById('rounds-container');
+      var currentRoundSection = null;
+      var canvas = null;
+      var ctx = null;
+      var canvasWidth = 1000;
+      var canvasHeight = 1000;
       var boardSize = canvasWidth;
-      var ctx = canvas.getContext('2d');
+
       var initiated = false;
       var totalScores = [];
       var lastScores = [];
+      var roundNumber = 1;
+      var playerNames = [];
 
       var colors = ['red', 'blue', 'green', 'orange', 'yellow', 'purple',
           'silver', 'olive', 'teal'];
@@ -144,6 +201,66 @@
 
       var clockInterval;
       var clockStart;
+
+      function createNewRound() {
+        // Create round section
+        var roundSection = document.createElement('div');
+        roundSection.className = 'round-section';
+
+        // Create round info div
+        var roundInfo = document.createElement('div');
+        roundInfo.className = 'round-info';
+
+        // Add round title
+        var roundTitle = document.createElement('div');
+        roundTitle.className = 'round-title';
+        roundTitle.textContent = 'Round ' + roundNumber;
+        roundInfo.appendChild(roundTitle);
+
+        // Add player info table
+        var playerInfoDiv = document.createElement('div');
+        playerInfoDiv.className = 'round-player-info';
+        
+        // Add header
+        var headerRow = document.createElement('div');
+        headerRow.classList.add('player-info-header');
+        headerRow.innerHTML = `
+          <div></div>
+          <div>Name</div>
+          <div>Time</div>
+          <div>Round %</div>
+          <div>Weight Pool</div>
+        `;
+        playerInfoDiv.appendChild(headerRow);
+
+        // Add player rows
+        for (var i = 0; i < playerNames.length; i++) {
+          playerInfoDiv.appendChild(getInfoComponent(playerNames[i], i));
+        }
+
+        roundInfo.appendChild(playerInfoDiv);
+
+        // Create canvas
+        var newCanvas = document.createElement('canvas');
+        newCanvas.className = 'game-canvas';
+        newCanvas.width = 1000;
+        newCanvas.height = 1000;
+
+        // Add to round section
+        roundSection.appendChild(roundInfo);
+        roundSection.appendChild(newCanvas);
+
+        // Add to container
+        roundsContainer.appendChild(roundSection);
+
+        // Update references
+        currentRoundSection = roundSection;
+        canvas = newCanvas;
+        ctx = canvas.getContext('2d');
+
+        roundNumber++;
+        return newCanvas;
+      }
 
       function drawStones(boardData) {
         var board = boardData.split(" ");
@@ -240,9 +357,8 @@
         var nameComponent = document.createElement('div');
         var colorComponent = document.createElement('div');
         var scoreComponent = document.createElement('div');
-        var totalScoreComponent = document.createElement('div');
         var timeComponent = document.createElement('div');
-		var weightPoolComponent = document.createElement('div');
+        var weightPoolComponent = document.createElement('div');
 
         infoComponent.classList.add('player-info-container')
         infoComponent.setAttribute('player-id', index.toString());
@@ -252,19 +368,38 @@
         colorComponent.style.background = colors[index];
         scoreComponent.classList.add('player-score');
         scoreComponent.textContent = '0';
-        totalScoreComponent.classList.add('total-player-score');
-        totalScoreComponent.textContent = '0';
         timeComponent.classList.add('player-time');
         timeComponent.textContent = '120s';
-		weightPoolComponent.classList.add('player-weight-pool');
+        weightPoolComponent.classList.add('player-weight-pool');
         weightPoolComponent.textContent = '0';
 
         infoComponent.appendChild(colorComponent);
         infoComponent.appendChild(nameComponent);
         infoComponent.appendChild(timeComponent);
         infoComponent.appendChild(scoreComponent);
+        infoComponent.appendChild(weightPoolComponent);
+
+        return infoComponent;
+      }
+
+      function getTotalStatsComponent(name, index) {
+        var infoComponent = document.createElement('div');
+        var nameComponent = document.createElement('div');
+        var colorComponent = document.createElement('div');
+        var totalScoreComponent = document.createElement('div');
+
+        infoComponent.classList.add('total-stats-container')
+        infoComponent.setAttribute('player-id', index.toString());
+        nameComponent.classList.add('player-name');
+        nameComponent.textContent = name;
+        colorComponent.classList.add('player-color');
+        colorComponent.style.background = colors[index];
+        totalScoreComponent.classList.add('total-player-score');
+        totalScoreComponent.textContent = '0%';
+
+        infoComponent.appendChild(colorComponent);
+        infoComponent.appendChild(nameComponent);
         infoComponent.appendChild(totalScoreComponent);
-		infoComponent.appendChild(weightPoolComponent);
 
         return infoComponent;
       }
@@ -284,28 +419,31 @@
 
       function init(names) {
         var nameArr = names.split('"NAME_SEPARATOR"');
-        var infoDiv = document.getElementById('player-info');
+        playerNames = nameArr;
+        
+        var totalStatsDiv = document.getElementById('total-stats');
 
-		// ADD HEADER ROW
-	  	var headerRow = document.createElement('div');
-	  	headerRow.classList.add('player-info-header');
-	  	headerRow.innerHTML = `
-			<div></div>
-			<div>Name</div>
-			<div>Time</div>
-			<div>Round %</div>
-			<div>Total %</div>
-			<div>Weight Pool</div>
-		`;
-	  	infoDiv.appendChild(headerRow);
+        // ADD HEADER ROW for total stats
+        var headerRow = document.createElement('div');
+        headerRow.classList.add('total-stats-header');
+        headerRow.innerHTML = `
+          <div></div>
+          <div>Name</div>
+          <div>Total %</div>
+        `;
+        totalStatsDiv.appendChild(headerRow);
 
-
-		for (var i = 0; i < nameArr.length; i++) {
-          infoDiv.appendChild(getInfoComponent(nameArr[i], i));
+        for (var i = 0; i < nameArr.length; i++) {
+          totalStatsDiv.appendChild(getTotalStatsComponent(nameArr[i], i));
           totalScores.push(0);
         }
+  
+        // Create first round
+        createNewRound();
+  
         resetClock(false);
       }
+
 
       function updatePlayers(boardData) {
         var board = boardData.split(" ");
@@ -313,7 +451,10 @@
         var weightPools = board.slice(board.length - 4 - numberOfPlayers, board.length - 4);
         var scores = board.slice(board.length - 4 - 2 * numberOfPlayers, board.length - 4 - numberOfPlayers);
         var times = board.slice(board.length - 4 - 3 * numberOfPlayers, board.length - 4 - 2 * numberOfPlayers);
-		var playerInfo = document.querySelectorAll('#player-info .player-info-container');
+        
+        // Update total stats
+        var totalStatsInfo = document.querySelectorAll('#total-stats .total-stats-container');
+        
         var totalRoundScore = 0;
         scores.forEach(function(singleScore) {
           totalRoundScore += parseInt(singleScore, 10);
@@ -325,31 +466,48 @@
         tempTotalScores.forEach(function(singleScore) {
           totalScore += singleScore;
         });
-        playerInfo.forEach(function(info) {
+        
+        // Update total stats
+        totalStatsInfo.forEach(function(info) {
           var i = parseInt(info.getAttribute('player-id'));
-          var percentageRoundScore = (100 * parseInt(scores[i], 10) / totalRoundScore).toFixed(1);
           var percentageScore = (100 * tempTotalScores[i] / totalScore).toFixed(1);
-          info.querySelector('.player-score').textContent = `${percentageRoundScore}%`;
           info.querySelector('.total-player-score').textContent = `${percentageScore}%`;
-          info.querySelector('.player-time').textContent = times[i] + 's';
-		  info.querySelector('.player-weight-pool').textContent = weightPools[i];
         });
+        
+        // Update round info (no total %) - only if currentRoundSection exists
+        if (currentRoundSection) {
+          var roundPlayerInfo = currentRoundSection.querySelectorAll('.player-info-container');
+          roundPlayerInfo.forEach(function(info) {
+            var i = parseInt(info.getAttribute('player-id'));
+            var percentageRoundScore = (100 * parseInt(scores[i], 10) / totalRoundScore).toFixed(1);
+            info.querySelector('.player-score').textContent = `${percentageRoundScore}%`;
+            info.querySelector('.player-time').textContent = times[i] + 's';
+            info.querySelector('.player-weight-pool').textContent = weightPools[i];
+          });
+        }
+        
         lastScores = scores.map(function(singleScore) {return parseInt(singleScore, 10)});
       }
 
       function softReset() {
-        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+        // Create new round
+        createNewRound();
         moves = [];
         document.querySelector('#game-over').textContent = "";
       }
 
       function resetBoard() {
         initiated = false;
-        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+        roundsContainer.innerHTML = "";
+        currentRoundSection = null;
+        canvas = null;
+        ctx = null;
         moves = [];
         totalScores = [];
         lastScores = [];
-        document.getElementById('player-info').innerHTML = "";
+        roundNumber = 1;
+        playerNames = [];
+        document.getElementById('total-stats').innerHTML = "";
         document.querySelector('#game-over').textContent = "";
       }
 
