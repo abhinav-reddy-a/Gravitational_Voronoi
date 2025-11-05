@@ -99,12 +99,14 @@ class Client:
           else:
             print("Error: player info incorrect")
 
+        # get remaining weight
+        self.remaining_weight_pool = int(move_data[-1]) 
+
         # make move
         my_move_row, my_move_col, my_move_weight = self.__getMove()
-        self.remaining_weight_pool -= my_move_weight
         self.moves.append((my_move_row, my_move_col, my_move_weight, self.player_number))
         self.__send_move(my_move_row, my_move_col, my_move_weight)
-        print("Played at row {}, col {} with weight: {}".format(my_move_row, my_move_col, my_move_weight))
+        print("Played at row {}, col {} with weight: {} from remaining weight pool of {}".format(my_move_row, my_move_col, my_move_weight, self.remaining_weight_pool))
       self.__reset()
 
     self.sock.close()

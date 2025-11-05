@@ -61,7 +61,8 @@ class VoronoiGame:
         break
       for j in range(4):
         new_moves.append(self.moves[i - 3 + j])
-    game_info += " ".join(str(i) for i in new_moves) + "\n"
+    game_info += " ".join(str(i) for i in new_moves) + " "
+    game_info += str(self.weight_pool[self.current_player]) + "\n"
     return game_info
 
   def __broadcast_game_info(self):
@@ -253,6 +254,7 @@ class VoronoiGame:
         # move is legal, do some book-keeping
         self.moves_made += 1
         self.grid[move_row][move_col] = self.current_player + 1
+        self.weight_pool[self.current_player] -= move_weight
         self.moves.append(move_row)
         self.moves.append(move_col)
         self.moves.append(move_weight)
