@@ -7,7 +7,7 @@ This repository contains the architect code for Gravitational Voronoi. It consis
 The server is written in Python 3. To run the server, execute:
 
 ```
-python3 voronoi_game.py <number-of-stones> <number-of-players> <host-ip> <port> [<use-graphics>]
+python3 voronoi_game.py <number-of-stones> <number-of-players> <total-weight-pool> <host-ip> <port> [<use-graphics>]
 ```
 
 The last command line argument `<use-graphics>` is optional and graphics is only activated if you pass a `1` for this argument.
@@ -32,24 +32,25 @@ If you wish to write your own client, please follow the server-client communicat
 
 1. Connect your client to the server.
 
-2. Receive game information. After connecting your client to the server, you should receive the game information from the server in the format of `"<number-of-players> <number-of-stones> <player-order>\n"`. The string is delimited by a space and ends with a new line character.
+2. Receive game information. After connecting your client to the server, you should receive the game information from the server in the format of `"<number-of-players> <number-of-stones> <initial-weight-pool> <player-order>\n"`. The string is delimited by a space and ends with a new line character.
 
 3. Send team name. After receiving the game information, you should send your team name to the server as a string.
 
 4. Receive game updates. Your client will receive an update from the server when it is your turn. The update consists of three parts.
    1. Game over flag. The flag is set to `1` when the game is over, and `0` otherwise
-   2. Scores. Say there are N players. Then there will be N numbers, representing the score from player 1 to player N.
-   3. New moves. These are the moves that have been played after you played your last move. Each move consists of three numbers: the row of the move, the column of the move, and the player than made the move. The moves are ordered in the order in which they were played.
+   2. Remaining weight pool of the player
+   3. Scores. Say there are N players. Then there will be N numbers, representing the score from player 1 to player N.
+   4. New moves. These are the moves that have been played after you played your last move. Each move consists of three numbers: the row of the move, the column of the move, and the player than made the move. The moves are ordered in the order in which they were played.
 
 Notice that every number in the game update is separated by a space, and at the very end there will be a new line character.
 
 The following represents what a general game update looks like. Note that the move row and move columns are **0-indexed**, and move players are **1-indexed**.
 
 ```
-"<game-over-flag> <score1> <score2> ... <move1-row> <move1-col> <move1-player> <move2-row> <move2-col> <move2-player> ...\n"
+"<game-over-flag> <remaining-weight-pool> <score1> <score2> ... <move1-row> <move1-col> <move1-player> <move2-row> <move2-col> <move2-player> ...\n"
 ```
 
-5. Send move to server. After receiving a game update from the server, your client should finish your turn by sending a move to the server. The move should simply be a string `"<move_row> <move_col>"` - row and column of the move separated by a space.
+5. Send move to server. After receiving a game update from the server, your client should finish your turn by sending a move to the server. The move should simply be a string `"<move_row> <move_col> <move_weight>"` - row and column of the move separated by a space.
 
 A special note on the player rotation protocol - although multiple games are played during one competition (number of games equals number of players), the client needs to complete step `1-3` once only. Moreover, the server does not explicitly indicate the start of a new game. Instead, the client should check if the most recent update has the `game-over-flag` set, and if so, the client should treat all future updates as updates for a new game. It might be helpful to take a look at how the sample client handles rotation if the description is not clear enough.
 
@@ -58,7 +59,7 @@ A special note on the player rotation protocol - although multiple games are pla
 To run the game without the display, run the server with:
 
 ```
-python3 voronoi_game.py <number-of-stones> <number-of-players> <host-ip> <port>
+python3 voronoi_game.py <number-of-stones> <number-of-players> <total-weight-pool> <host-ip> <port>
 ```
 
 and run each client with (if you are using the client provided here):
@@ -88,7 +89,7 @@ node web.js
 and then open `localhost:10000` in your browser. You are now ready to run as many games as you want using basically the same approach as without a display. The only difference is to add a `1` to the server command from above like so:
 
 ```
-python3 voronoi_game.py <number-of-stones> <number-of-players> <host-ip> <port> 1
+python3 voronoi_game.py <number-of-stones> <number-of-players> <total-weight-pool> <host-ip> <port> 1
 ```
 
 Every time you start a new server the board will reset on your display.
